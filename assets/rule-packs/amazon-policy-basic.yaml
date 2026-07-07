@@ -1,0 +1,68 @@
+pack_id: amazon-policy-basic
+version: 0.1.0
+platform: amazon
+description: Basic Amazon listing and compliance-document guardrails.
+guardrails:
+  - rule_id: AMAZON_APPROVAL_WORDING_001
+    purpose: fallback_phrase_check
+    severity: high
+    when:
+      all:
+        - fact: platform
+          op: equals
+          value: amazon
+        - fact: listing_text
+          op: contains
+          value: CPSC approved
+    issue: Listing contains unsupported CPSC approval wording.
+    rationale: Platform listings should avoid unsupported regulatory approval language.
+    suggested_actions:
+      - Remove CPSC approval wording unless platform-approved documentation supports it.
+    required_documents:
+      - Regulatory authorization evidence
+    requires_expert_review: true
+
+  - rule_id: AMAZON_SENSITIVE_PRODUCT_DOCS_001
+    purpose: required_evidence_prompt
+    severity: medium
+    when:
+      all:
+        - fact: platform
+          op: equals
+          value: amazon
+        - fact: attributes.child_directed
+          op: equals
+          value: true
+        - fact: declared_documents
+          op: missing
+    issue: Child-directed Amazon listing has no declared compliance documents.
+    rationale: Sensitive products commonly require supporting documentation before or after listing.
+    suggested_actions:
+      - Add relevant test reports, labels, warnings, and supplier documents to the workspace.
+    required_documents:
+      - Product label photo
+      - Applicable test report
+    requires_expert_review: true
+
+  - rule_id: AMAZON_ANY_SENSITIVE_001
+    purpose: expert_review_trigger
+    severity: medium
+    when:
+      all:
+        - fact: platform
+          op: equals
+          value: amazon
+        - fact: sensitive_attribute_flags
+          op: any_true
+          value:
+            - attributes.child_directed
+            - attributes.battery_powered
+            - attributes.skin_contact
+            - attributes.food_contact
+            - attributes.small_parts
+    issue: Product has sensitive attributes that may need platform compliance review.
+    rationale: Amazon compliance risk increases when listings involve children, batteries, skin contact, food contact, or small parts.
+    suggested_actions:
+      - Confirm applicable category-specific Amazon requirements before publishing.
+    required_documents: []
+    requires_expert_review: false

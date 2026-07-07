@@ -1,0 +1,20 @@
+# Listing Redline
+
+{% for finding in result.claim_findings %}
+## Finding {{ loop.index }}: {{ finding.claim_type }}
+
+- Source quote: "{{ finding.source_quote }}"
+- Line: {{ finding.line_number or "unknown" }}
+- Risk level: {{ finding.risk_level }}
+- Reason: {{ finding.reason }}
+- Suggested rewrite: {{ finding.suggested_rewrite or "Manual rewrite recommended." }}
+- Evidence required: {{ "yes" if finding.evidence_required else "no" }}
+- Source mode: {{ finding.source_mode }}
+
+{% else %}
+No listing claim findings were generated.
+{% endfor %}
+
+## Disclaimer
+
+{{ result.disclaimer }}

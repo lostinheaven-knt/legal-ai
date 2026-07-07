@@ -1,0 +1,68 @@
+pack_id: eu-gpsr-basic
+version: 0.1.0
+market: EU
+description: Basic EU general product safety guardrails and fallback prompts.
+guardrails:
+  - rule_id: EU_GPSR_TRACEABILITY_001
+    purpose: required_evidence_prompt
+    severity: high
+    when:
+      all:
+        - fact: markets
+          op: contains
+          value: EU
+        - fact: supplier.name
+          op: missing
+    issue: Missing supplier or responsible-party traceability information.
+    rationale: EU pre-checks require traceability information to be verified before listing.
+    suggested_actions:
+      - Add manufacturer, importer, or responsible-person details to product.yaml.
+    required_documents:
+      - Product label photo
+      - Responsible person or importer details
+    requires_expert_review: true
+
+  - rule_id: EU_GPSR_CHILD_BATTERY_001
+    purpose: expert_review_trigger
+    severity: high
+    when:
+      all:
+        - fact: markets
+          op: contains
+          value: EU
+        - fact: attributes.child_directed
+          op: equals
+          value: true
+        - fact: attributes.battery_powered
+          op: equals
+          value: true
+    issue: Child-directed battery-powered product needs expert safety review.
+    rationale: Children products and battery-powered products can create higher safety and documentation risk.
+    suggested_actions:
+      - Verify age grading, warnings, labels, and applicable safety test reports before listing.
+    required_documents:
+      - Age grading or toy safety test report
+      - Battery safety documentation
+      - Product label photo
+    requires_expert_review: true
+
+  - rule_id: EU_GPSR_WARNING_001
+    purpose: fallback_phrase_check
+    severity: medium
+    when:
+      all:
+        - fact: markets
+          op: contains
+          value: EU
+        - fact: attributes.small_parts
+          op: equals
+          value: true
+        - fact: listing_text
+          op: missing
+    issue: Small-parts warning could not be checked because listing text is missing.
+    rationale: Small-parts products need warning and age-suitability review in the listing and label.
+    suggested_actions:
+      - Provide listing text and label photos so warnings can be checked.
+    required_documents:
+      - Product label photo
+    requires_expert_review: false

@@ -1,0 +1,51 @@
+# Supplier Email
+
+{% if supplier_email_en or supplier_email_zh %}
+{% if supplier_email_en %}
+## English
+
+{{ supplier_email_en }}
+{% endif %}
+
+{% if supplier_email_zh %}
+## 中文
+
+{{ supplier_email_zh }}
+{% endif %}
+{% else %}
+## English
+
+Subject: Compliance document request for {{ result.product_profile.name or "product" }}
+
+Hello,
+
+We are completing a preliminary ecommerce compliance pre-check. Please provide the following materials:
+
+{% for gap in request_gaps %}
+- {{ gap.material }}: {{ gap.suggested_supplier_follow_up or gap.reason }}
+{% else %}
+- No missing supplier evidence was identified by this MVP check.
+{% endfor %}
+
+## 中文
+
+主题：{{ result.product_profile.name or "产品" }} 合规资料补充请求
+
+您好，
+
+我们正在进行跨境电商合规预检查。请协助提供以下资料：
+
+{% for gap in request_gaps %}
+- {{ gap.material }}：{{ gap.suggested_supplier_follow_up or gap.reason }}
+{% else %}
+- 本次 MVP 检查未识别到需要补充的供应商资料。
+{% endfor %}
+{% endif %}
+
+## Note
+
+These requests are based on a preliminary ecommerce compliance pre-check.
+
+## Disclaimer
+
+{{ result.disclaimer }}

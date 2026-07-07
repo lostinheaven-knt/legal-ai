@@ -1,0 +1,89 @@
+# Risk Report
+
+## Executive Summary
+
+{{ executive_summary }}
+
+## Product Profile
+
+- Product ID: {{ result.product_profile.product_id or "missing" }}
+- Name: {{ result.product_profile.name or "missing" }}
+- Category: {{ result.product_profile.category or "missing" }}
+- Markets: {{ result.product_profile.markets | join(", ") }}
+- Platform: {{ result.product_profile.platform or "missing" }}
+- Supplier: {{ result.product_profile.supplier.name if result.product_profile.supplier and result.product_profile.supplier.name else "missing" }}
+
+{% if result.product_profile.missing_fields %}
+## Missing Product Fields
+
+{% for field in result.product_profile.missing_fields %}
+- {{ field.field }}: {{ field.reason }}{% if field.question %} {{ field.question }}{% endif %}
+{% endfor %}
+{% endif %}
+
+## Risk Matrix
+
+| Severity | Market | Platform | Issue | Expert Review | Source |
+|---|---|---|---|---|---|
+{% for item in result.risk_items %}
+| {{ item.severity }} | {{ item.market }} | {{ item.platform }} | {{ item.issue }} | {{ "yes" if item.requires_expert_review else "no" }} | {{ item.source }}{% if item.guardrail_id %}:{{ item.guardrail_id }}{% endif %} |
+{% else %}
+| uncertain | general | general | No concrete risks identified by MVP checks; not a clearance. | yes | fallback |
+{% endfor %}
+
+## Listing Claim Review
+
+{% for finding in result.claim_findings %}
+- {{ finding.risk_level }} {{ finding.claim_type }}: "{{ finding.source_quote }}"{% if finding.line_number %} (line {{ finding.line_number }}){% endif %}. {{ finding.reason }} Suggested rewrite: {{ finding.suggested_rewrite or "review manually" }} Evidence required: {{ "yes" if finding.evidence_required else "no" }}.
+{% else %}
+- No listing claim findings were generated.
+{% endfor %}
+
+## Evidence Gaps
+
+{% for gap in result.evidence_gaps %}
+- {{ gap.priority }} {{ gap.material }}: {{ gap.status }}. {{ gap.reason }}{% if gap.source_path %} Source: {{ gap.source_path }}.{% endif %}
+{% else %}
+- No evidence gaps were generated.
+{% endfor %}
+
+## Recommended Actions
+
+{% for item in result.risk_items %}
+{% for action in item.suggested_actions %}
+- {{ action }}
+{% endfor %}
+{% endfor %}
+{% for gap in request_gaps %}
+- {{ gap.suggested_supplier_follow_up or ("Request " ~ gap.material) }}
+{% endfor %}
+
+## Uncertainty Notes
+
+{% for note in result.uncertainty_notes %}
+- {{ note }}
+{% else %}
+- No extra uncertainty notes were recorded.
+{% endfor %}
+
+## Expert Review Flags
+
+{% for flag in result.expert_review_flags %}
+- {{ flag }}
+{% else %}
+- No explicit expert-review flags were recorded.
+{% endfor %}
+
+## Prompt And Guardrail Metadata
+
+- LLM mode: {{ result.llm_mode }}
+{% for prompt in result.prompt_contracts %}
+- Prompt: {{ prompt.contract_id }} {{ prompt.version }} -> {{ prompt.target_schema }}
+{% endfor %}
+{% for pack in result.guardrail_packs %}
+- Guardrail: {{ pack.pack_id }} {{ pack.version }}{% if pack.market %} market={{ pack.market }}{% endif %}{% if pack.platform %} platform={{ pack.platform }}{% endif %}
+{% endfor %}
+
+## Disclaimer
+
+{{ result.disclaimer }}

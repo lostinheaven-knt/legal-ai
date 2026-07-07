@@ -1,0 +1,38 @@
+# Ignore everything by default. This public repo intentionally publishes only
+# the runtime package, prompt/rule assets, skills, README, and project metadata.
+*
+
+# Keep repository metadata.
+!.gitignore
+!README.md
+!pyproject.toml
+
+# Keep source package and public assets.
+!src/
+!src/**
+!assets/
+!assets/**
+!skills/
+!skills/**
+
+# Drop generated and local-only files inside kept directories.
+.DS_Store
+**/.DS_Store
+**/__pycache__/
+**/*.py[cod]
+src/*.egg-info/
+src/**/*.egg-info/
+
+# Local environments, caches, build outputs, docs, tests, and workspace notes.
+.venv/
+.pytest_cache/
+.ruff_cache/
+.codex/
+AGENTS.md
+docs/
+tests/
+uv.lock
+*.log
+dist/
+build/
+*.egg-info/

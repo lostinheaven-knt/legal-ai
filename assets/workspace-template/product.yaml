@@ -1,0 +1,27 @@
+product_id: SKU-DEMO-001
+name: LED Toy Car
+category: toy
+subcategory: electronic_toy
+target_markets:
+  - EU
+  - US
+platforms:
+  - amazon
+attributes:
+  child_directed: true
+  age_range: "3+"
+  battery_powered: true
+  skin_contact: true
+  food_contact: false
+  small_parts: true
+  material_hints:
+    - ABS plastic
+    - LED module
+supplier:
+  name: Shenzhen Example Factory
+  country: China
+documents:
+  test_reports:
+    - supplier-docs/test-report.pdf
+  label_photos:
+    - supplier-docs/label.jpg

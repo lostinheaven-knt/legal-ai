@@ -1,0 +1,61 @@
+pack_id: us-ftc-claims-basic
+version: 0.1.0
+market: US
+description: Basic US advertising-claim and substantiation guardrails.
+guardrails:
+  - rule_id: US_FTC_ABSOLUTE_SAFE_001
+    purpose: fallback_phrase_check
+    severity: high
+    when:
+      all:
+        - fact: markets
+          op: contains
+          value: US
+        - fact: listing_text
+          op: contains
+          value: 100% safe
+    issue: Listing contains an absolute safety claim.
+    rationale: Absolute safety claims can be misleading unless strongly substantiated and carefully qualified.
+    suggested_actions:
+      - Replace absolute safety wording with specific, evidence-backed safety information.
+    required_documents:
+      - Claim substantiation file
+    requires_expert_review: true
+
+  - rule_id: US_FTC_REGULATORY_APPROVAL_001
+    purpose: fallback_phrase_check
+    severity: high
+    when:
+      all:
+        - fact: markets
+          op: contains
+          value: US
+        - fact: listing_text
+          op: contains
+          value: FDA approved
+    issue: Listing contains FDA approval wording.
+    rationale: Regulatory endorsement claims require exact authorization and supporting evidence.
+    suggested_actions:
+      - Remove FDA approval wording unless verified authorization applies to this product.
+    required_documents:
+      - Regulatory authorization evidence
+    requires_expert_review: true
+
+  - rule_id: US_FTC_SUBSTANTIATION_001
+    purpose: required_evidence_prompt
+    severity: medium
+    when:
+      all:
+        - fact: markets
+          op: contains
+          value: US
+        - fact: declared_documents
+          op: missing
+    issue: No claim substantiation or safety documents are declared.
+    rationale: US advertising and product-safety review depends on evidence for material claims.
+    suggested_actions:
+      - Add declared supplier documents to product.yaml and supplier-docs.
+    required_documents:
+      - Claim substantiation file
+      - Safety test report where applicable
+    requires_expert_review: false

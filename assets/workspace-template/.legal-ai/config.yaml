@@ -1,0 +1,25 @@
+project:
+  name: demo-product
+defaults:
+  markets:
+    - EU
+    - US
+  platform: amazon
+  language: bilingual
+  strict: false
+guardrails:
+  packs:
+    - eu-gpsr-basic
+    - us-ftc-claims-basic
+    - amazon-policy-basic
+llm:
+  enabled: auto
+  provider: deepseek-compatible
+  model: deepseek-chat
+  timeout_seconds: 45
+  max_retries: 1
+  prompt_version: v1
+privacy:
+  local_first: true
+  redact_supplier_name: false
+  allow_supplier_doc_upload: false
