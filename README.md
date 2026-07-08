@@ -14,21 +14,27 @@ listing claim redlines, supplier evidence requests, and structured audit output.
 - Reviews ecommerce claims for unsupported, risky, or unclear wording.
 - Triages EU, US, and Amazon compliance concerns with local guardrail packs.
 - Inspects supplier evidence inventory and produces gap requests.
-- Renders Markdown reports, supplier emails, XLSX evidence tables, and JSON.
+- Renders Markdown reports, PDF reports, supplier emails, XLSX evidence tables, and JSON.
+- Provides productized LLM error messages with actionable recovery guidance.
 - Supports deterministic offline fallback and DeepSeek/OpenAI-compatible LLM mode.
 
 ## Repository Layout
 
 ```text
 .
-├── assets/              # Prompt contracts, guardrail packs, workspace template
-├── skills/              # Operator-facing workflow skills
-├── src/legal_ai/        # CLI, models, LLM adapter, checks, and report builders
+├── src/legal_ai/
+│   ├── cli.py           # CLI entry point (Typer)
+│   ├── commands/        # init, check, listing, evidence, report subcommands
+│   ├── skills/          # Workflow skills (compliance, claims, evidence, PDF, reports)
+│   ├── rules/           # Guardrail pack loader and schema
+│   ├── llm/             # LLM client, prompts, and JSON schemas
+│   ├── templates/       # Jinja2 templates (risk report, redline, supplier email, expert review)
+│   └── models.py        # Pydantic data models
 ├── README.md
 └── pyproject.toml
 ```
 
-Only runtime source, public assets, skills, and project metadata are published.
+Only runtime source, templates, and project metadata are published.
 Local experiments, caches, tests, docs, virtualenvs, and generated workspaces are
 ignored by design.
 
@@ -77,6 +83,7 @@ legal-ai check demo-product --market EU,US --platform amazon --strict
 Generated artifacts:
 
 - `reports/risk-report.md`
+- `reports/risk-report.pdf`
 - `reports/listing-redline.md`
 - `reports/evidence-gap.xlsx`
 - `reports/supplier-email.md`
@@ -122,8 +129,14 @@ fails. `--llm off` stays fully local and deterministic.
 ```bash
 legal-ai listing review demo-product --market EU,US --platform amazon
 legal-ai evidence gap demo-product --market EU,US --platform amazon
-legal-ai report build demo-product
+legal-ai report build demo-product          # generates .md, .pdf, .xlsx, and .json
 ```
+
+`report build` produces a PDF risk report when `reportlab` is installed and a
+CJK-capable font is available on the system (macOS system fonts, Noto Sans CJK,
+or bundled fonts under `src/legal_ai/assets/fonts/`). When no CJK font is found
+but the report contains only ASCII text, a minimal built-in PDF writer is used
+as a fallback — no external dependency needed.
 
 ## Privacy Model
 
