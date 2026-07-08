@@ -21,7 +21,14 @@ from legal_ai.llm.client import (
 )
 from legal_ai.llm.prompts import load_prompt_contract
 from legal_ai.llm.schemas import ReportDraftingResponse
-from legal_ai.models import EvidenceGap, PromptContractMeta, StructuredResult
+from legal_ai.models import (
+    ClaimFinding,
+    EvidenceGap,
+    PromptContractMeta,
+    RiskItem,
+    StructuredResult,
+)
+from legal_ai.skills.pdf_report import write_risk_report_pdf
 
 
 class ReportLLMClient(Protocol):
@@ -74,24 +81,40 @@ def build_reports(
         "supplier_email_en": draft.supplier_email_en if draft else None,
         "supplier_email_zh": draft.supplier_email_zh if draft else None,
         "request_gaps": _requestable_gaps(structured_result.evidence_gaps),
+        "high_risks": _high_risks(structured_result.risk_items),
+        "uncertain_risks": _uncertain_risks(structured_result.risk_items),
+        "review_claims": _review_claims(structured_result.claim_findings),
+        "has_expert_review_triggers": _has_expert_review_triggers(structured_result),
     }
+    risk_report_path = _render_template(
+        "risk-report.md.j2",
+        output_dir / "risk-report.md",
+        render_context,
+    )
     outputs = {
-        "risk_report": _render_template(
-            "risk-report.md.j2",
-            output_dir / "risk-report.md",
-            render_context,
-        ),
+        "risk_report": risk_report_path,
         "listing_redline": _render_template(
             "listing-redline.md.j2", output_dir / "listing-redline.md", render_context
         ),
         "supplier_email": _render_template(
             "supplier-email.md.j2", output_dir / "supplier-email.md", render_context
         ),
+        "expert_review_pack": _render_template(
+            "expert-review-pack.md.j2",
+            output_dir / "expert-review-pack.md",
+            render_context,
+        ),
     }
     outputs["evidence_gap"] = _write_evidence_gap_xlsx(
         structured_result.evidence_gaps,
         output_dir / "evidence-gap.xlsx",
     )
+    outputs["risk_report_pdf"] = write_risk_report_pdf(
+        Path(risk_report_path).read_text(encoding="utf-8"),
+        output_dir / "risk-report.pdf",
+    )
+    structured_path = output_dir / "structured-result.json"
+    outputs["structured_result"] = structured_path.as_posix()
 
     result_for_json = structured_result.model_copy(
         update={
@@ -99,10 +122,6 @@ def build_reports(
             "prompt_contracts": _merge_prompt_meta(structured_result, prompt_meta),
         }
     )
-    structured_path = output_dir / "structured-result.json"
-    structured_path.write_text(result_for_json.model_dump_json(indent=2), encoding="utf-8")
-    outputs["structured_result"] = structured_path.as_posix()
-    result_for_json = result_for_json.model_copy(update={"outputs": outputs})
     structured_path.write_text(result_for_json.model_dump_json(indent=2), encoding="utf-8")
 
     return ReportBuilderResult(
@@ -237,6 +256,32 @@ def _requestable_gaps(evidence_gaps: list[EvidenceGap]) -> list[EvidenceGap]:
         for gap in evidence_gaps
         if gap.status in {"missing", "incomplete", "unreadable", "uncertain"}
     ]
+
+
+def _high_risks(risk_items: list[RiskItem]) -> list[RiskItem]:
+    return [item for item in risk_items if item.severity == "high"]
+
+
+def _uncertain_risks(risk_items: list[RiskItem]) -> list[RiskItem]:
+    return [item for item in risk_items if item.severity == "uncertain"]
+
+
+def _review_claims(claim_findings: list[ClaimFinding]) -> list[ClaimFinding]:
+    return [
+        finding
+        for finding in claim_findings
+        if finding.risk_level in {"high", "uncertain"} or finding.evidence_required
+    ]
+
+
+def _has_expert_review_triggers(result: StructuredResult) -> bool:
+    return bool(
+        _high_risks(result.risk_items)
+        or _uncertain_risks(result.risk_items)
+        or result.expert_review_flags
+        or _review_claims(result.claim_findings)
+        or _requestable_gaps(result.evidence_gaps)
+    )
 
 
 def _merge_prompt_meta(

@@ -3,9 +3,13 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Annotated
 
-import click
 import typer
 from pydantic import ValidationError
+
+try:
+    from typer._click.exceptions import ClickException
+except ModuleNotFoundError:
+    from click import ClickException
 
 from legal_ai.audit import (
     AuditWriteError,
@@ -14,6 +18,7 @@ from legal_ai.audit import (
     workspace_input_files,
 )
 from legal_ai.commands.check import load_workspace_config
+from legal_ai.commands.errors import LLM_COMMAND_EXCEPTIONS, map_llm_exception
 from legal_ai.config import AppConfig
 from legal_ai.models import StructuredResult
 from legal_ai.skills.report_builder import build_reports
@@ -40,8 +45,20 @@ def build_report_workspace(
                 config=_config_for_audit(paths, llm=llm),
             )
         except AuditWriteError as audit_exc:
-            raise click.ClickException(str(audit_exc)) from audit_exc
-        raise click.ClickException(str(exc)) from exc
+            raise ClickException(str(audit_exc)) from audit_exc
+        raise ClickException(str(exc)) from exc
+    except LLM_COMMAND_EXCEPTIONS as exc:
+        mapped = map_llm_exception(exc)
+        try:
+            _append_report_audit(
+                paths,
+                status="handled_error",
+                error=mapped,
+                config=_config_for_audit(paths, llm=llm),
+            )
+        except AuditWriteError as audit_exc:
+            raise ClickException(str(audit_exc)) from audit_exc
+        raise ClickException(str(mapped)) from exc
 
     try:
         _append_report_audit(
@@ -51,7 +68,7 @@ def build_report_workspace(
             config=_config_for_audit(paths, llm=llm),
         )
     except AuditWriteError as exc:
-        raise click.ClickException(str(exc)) from exc
+        raise ClickException(str(exc)) from exc
     typer.echo("legal-ai report build completed")
     for label, output_path in result.outputs.items():
         typer.echo(f"{label}: {output_path}")

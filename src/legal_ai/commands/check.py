@@ -4,9 +4,13 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Annotated
 
-import click
 import typer
 from pydantic import ValidationError
+
+try:
+    from typer._click.exceptions import ClickException
+except ModuleNotFoundError:
+    from click import ClickException
 
 from legal_ai.audit import (
     AuditWriteError,
@@ -14,6 +18,7 @@ from legal_ai.audit import (
     safe_append_audit_event,
     workspace_input_files,
 )
+from legal_ai.commands.errors import LLM_COMMAND_EXCEPTIONS, map_llm_exception
 from legal_ai.config import AppConfig, CLIOverrides, load_config
 from legal_ai.models import LLMMode, StructuredResult
 from legal_ai.skills.evidence_gap import analyze_evidence_gaps
@@ -69,8 +74,27 @@ def check_workspace(
                 ),
             )
         except AuditWriteError as audit_exc:
-            raise click.ClickException(str(audit_exc)) from audit_exc
-        raise click.ClickException(str(exc)) from exc
+            raise ClickException(str(audit_exc)) from audit_exc
+        raise ClickException(str(exc)) from exc
+    except LLM_COMMAND_EXCEPTIONS as exc:
+        mapped = map_llm_exception(exc)
+        try:
+            _append_command_audit(
+                "check",
+                paths,
+                status="handled_error",
+                error=mapped,
+                config=_config_for_audit(
+                    paths,
+                    market=market,
+                    platform=platform,
+                    strict=strict,
+                    llm=llm,
+                ),
+            )
+        except AuditWriteError as audit_exc:
+            raise ClickException(str(audit_exc)) from audit_exc
+        raise ClickException(str(mapped)) from exc
 
     try:
         _append_command_audit(
@@ -87,7 +111,7 @@ def check_workspace(
             ),
         )
     except AuditWriteError as exc:
-        raise click.ClickException(str(exc)) from exc
+        raise ClickException(str(exc)) from exc
     typer.echo("legal-ai check completed")
     typer.echo(f"Risk items: {len(result.risk_items)}")
     typer.echo(f"Evidence gaps: {len(result.evidence_gaps)}")
