@@ -5,6 +5,7 @@
 # Keep repository metadata.
 !.gitignore
 !README.md
+!README.zh-CN.md
 !pyproject.toml
 
 # Keep source package and public assets.
